@@ -14,55 +14,36 @@ const Movie = mongoose.model('Movie', {
     year: Number,
 });
 
-let collection = null;
-
-
-async function connect(){
-    if(collection){
-        return collection;
-    }
-    const client = new MongoClient('mongodb://localhost:27017');
-    await client.connect();
-
-    const db = client.db('moviedb');
-    collection = db.collection('Modie');
-
-    return collection;
-}
-
-
 export async function getAll(){
-    const collection = await connect();
-    const docs = await collection.find({});
-    return docs.toArray();
+    return Movie.find({});
 };
 
 export async function remove(id){
-    const collection = await connect();
-    return collection.deleteOne({id});
+    const movie = await get(id);
+    return movie.remove();
 };
+
 export async function get(id){
-    const collection = await connect();
-    const doc = await collection.findOne({id});
-    return doc;
+    return Movie.find({id});
 };
+
 export async function insert(movie){
-    movie.id = Date.now();
-    const collection = await connect();
-    const data = collection.insertOne(movie);
-    return data;
+    return movie;
 }
-export function save(movie){
+
+export async function save(movie){
     if(!movie.id){
-        return insert(movie);
+        const newMovie = new Movie(movie);
+        newMovie.id = Data.now();
+        return newMovie.save();
     } else {
-        return update(movie);
+        const existingMovie = await get(parseInt(movie.id, 10));
+        existingMovie.title = movie.title;
+        existingMovie.year = movie.year;
+        return existingMovie.save();
     }
 }
 
 export async function update(movie){
-    movie.id = parseInt(movie.id, 10);
-    const collection = await connect();
-    await collection.updateOne({id: movie.id}, {$set: movie});
-    return movie;
+
 }
