@@ -1,21 +1,68 @@
-const data = [
-    { 
-        id: 1,
-        title: "Iron Man",
-        year: "2008"
-    },
-    { 
-        id: 2,
-        title: "Thor",
-        year: "2011"
-    },
-    { 
-        id: 3,
-        title: "Captain America",
-        year: "2011"
-    },
-];
+import express from 'express';
+import { MongoClient } from 'mongodb';
+import mongoose from 'mongoose';
 
-export default function getAll(){
-    return Promise.resolve(data);
+
+mongoose.connect('mongodb://localhost:27017/moviedb', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+});
+
+const Movie = mongoose.model('Movie', {
+    id: Number,
+    title: String,
+    year: Number,
+});
+
+let collection = null;
+
+
+async function connect(){
+    if(collection){
+        return collection;
+    }
+    const client = new MongoClient('mongodb://localhost:27017');
+    await client.connect();
+
+    const db = client.db('moviedb');
+    collection = db.collection('Modie');
+
+    return collection;
+}
+
+
+export async function getAll(){
+    const collection = await connect();
+    const docs = await collection.find({});
+    return docs.toArray();
 };
+
+export async function remove(id){
+    const collection = await connect();
+    return collection.deleteOne({id});
+};
+export async function get(id){
+    const collection = await connect();
+    const doc = await collection.findOne({id});
+    return doc;
+};
+export async function insert(movie){
+    movie.id = Date.now();
+    const collection = await connect();
+    const data = collection.insertOne(movie);
+    return data;
+}
+export function save(movie){
+    if(!movie.id){
+        return insert(movie);
+    } else {
+        return update(movie);
+    }
+}
+
+export async function update(movie){
+    movie.id = parseInt(movie.id, 10);
+    const collection = await connect();
+    await collection.updateOne({id: movie.id}, {$set: movie});
+    return movie;
+}
